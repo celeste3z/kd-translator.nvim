@@ -3,6 +3,8 @@
 Neovim plugin for [kd](https://github.com/Karmenzind/kd) CLI dictionary.
 Translate words and paragraphs via `kd --json` / `kd -t` with rich formatting in a floating preview window.
 
+![demo](https://github.com/user-attachments/assets/6376b642-9138-4ddc-8342-2588691f48de)
+
 ## Features
 
 - Word translation with phonetic, definitions, level, examples
@@ -108,7 +110,7 @@ Examples:
 :KdTranslator
 
 " Translate visual selection:
-:'<,'>KdTranslate
+  :'<,'>KdTranslator
 ```
 
 ## Dictionary complete integration
