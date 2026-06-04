@@ -18,7 +18,6 @@
 ---@class KdTranslator.Opts
 ---@field cmd? string `kd` or command fullpath
 ---@field preview_opts? vim.lsp.util.open_floating_preview.Opts
----@field key? string operator key
 ---@field hook? KdTranslator.Hooks
 
 ---@class KdTranslator
@@ -33,7 +32,6 @@ H.augroup = vim.api.nvim_create_augroup('KdTranslator', { clear = true })
 ---@type KdTranslator.Opts
 H.config = {
   cmd = 'kd',
-  key = 'gt',
   preview_opts = {
     border = vim.o.winborder or 'rounded',
     title = ' Translator ',
@@ -42,10 +40,7 @@ H.config = {
     max_height = 50,
   },
   hook = {
-    pre_process = function(text)
-      if vim.bo.filetype ~= 'markdown' then return text end
-      return H.clean_links(text)
-    end,
+    pre_process = function(text) return text end,
     build_cmd = function(text)
       if text:find('[\xE4-\xE9][\x80-\xBF][\x80-\xBF]') or text:find('%s') then return { H.config.cmd, '-t', text } end
       return { H.config.cmd, '--json', text }
@@ -146,34 +141,6 @@ function H.filter_stdout(stdout)
       function(line) return not line:find('未找到守护进程') and not line:find('成功启动守护进程') end
     )
     :totable()
-end
-
----@param text string
----@return string
-function H.clean_links(text)
-  local lines = vim.split(text, '\n', { plain = true })
-  local in_code_block = false
-  local clean = {}
-  for _, line in ipairs(lines) do
-    if line:match('^```') then
-      in_code_block = not in_code_block
-    elseif not in_code_block then
-      table.insert(clean, line)
-    end
-  end
-  text = table.concat(clean, ' ')
-
-  text = text:gsub('`([^`]+)`', '%1')
-  text = text:gsub('%[([^%[%]]+)%]%(%S+%)', '%1')
-  text = text:gsub('!%[([^%[%]]+)%]%(%S+%)', '%1')
-  text = text:gsub('%[.-%]:%s*%S+', '')
-  text = text:gsub('%f[%w](%a+://%S+)', '')
-  text = text:gsub('%f[%w](www%.[%w-]+%.%S+)', '')
-  text = text:gsub('%*%*([^%*]+)%*%*', '%1')
-  text = text:gsub('%*([^%*]+)%*', '%1')
-  text = text:gsub('%s+', ' ')
-  text = text:gsub('[:.,%s]+$', '')
-  return text
 end
 
 ---@param args string[]
@@ -533,7 +500,7 @@ function M.translate_preview(text)
   if is_paragraph then
     H.run_kd(args, function(err, lines)
       if err or not lines or #lines == 0 then
-        vim.notify('kd: ' .. (err or 'no result'), vim.log.levels.INFO)
+        vim.notify('kd: ' .. (err or 'no result'), vim.log.levels.INFO, { title = 'KdTranslator' })
         return
       end
       local ranges = {} ---@type KdTranslator.HLRange[]
@@ -558,16 +525,16 @@ function M.translate_preview(text)
   else
     H.run_kd(args, function(err, raw_lines)
       if err then
-        vim.notify('kd: ' .. err, vim.log.levels.INFO)
+        vim.notify('kd: ' .. err, vim.log.levels.INFO, { title = 'KdTranslator' })
         return
       end
       if not raw_lines or #raw_lines == 0 then
-        vim.notify('kd: no result', vim.log.levels.INFO)
+        vim.notify('kd: no result', vim.log.levels.INFO, { title = 'KdTranslator' })
         return
       end
       local ok, data = pcall(vim.json.decode, table.concat(raw_lines, '\n'))
       if not ok or not data or not data.k or #data.k == 0 then
-        vim.notify('kd: no result', vim.log.levels.INFO)
+        vim.notify('kd: no result', vim.log.levels.INFO, { title = 'KdTranslator' })
         return
       end
       H.show_float(M.format_word_json(data))
@@ -623,11 +590,6 @@ function H.create_keymaps()
     function() M.operator('visual') end,
     { desc = 'Kd Translate selection' }
   )
-
-  if type(H.config.key) == 'string' then
-    vim.keymap.set('n', H.config.key, '<Plug>(kd-translator-operator)', { desc = 'Kd Translate Operator' })
-    vim.keymap.set('x', H.config.key, '<Plug>(kd-translator-visual)', { desc = 'Kd Translate Selection' })
-  end
 end
 
 ---@param opts? KdTranslator.Opts
@@ -638,7 +600,7 @@ function M.setup(opts)
   H.config = vim.tbl_deep_extend('force', H.config, opts or {})
 
   if vim.fn.executable(H.config.cmd) == 0 then
-    vim.notify('kd: executable not found', vim.log.levels.WARN)
+    vim.notify('kd: executable not found', vim.log.levels.WARN, { title = 'KdTranslator' })
     return
   end
 

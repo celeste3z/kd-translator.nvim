@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+import json
+import sys
+
+WORD_RESPONSE = {
+    "k": "hello",
+    "pron": {
+        "美": "/həˈloʊ/",
+        "英": "/həˈləʊ/",
+    },
+    "para": [
+        "int. 你好；喂",
+        "n. 问候语",
+    ],
+    "co": {"star": 4, "rank": "500", "pat": "[C]"},
+    "eg": {
+        "bi": [
+            ["Hello, how are you?", "你好，你怎么样？"],
+            ["She said hello to me.", "她向我打了招呼。"],
+        ]
+    },
+}
+
+PARAGRAPH_QUERY = (
+    "有时候，生活中总有些东西在等待着我们去发现。"
+    "它可能是一个新的想法，也可能是一段新的经历。"
+    "无论是什么，都值得我们去追寻。"
+)
+
+PARAGRAPH_TRANSLATION = (
+    "Sometimes, there is something in life "
+    "that is waiting for us to discover. "
+    "It could be a new idea, or a new experience. "
+    "Whatever it is, it is worth pursuing."
+)
+
+if sys.argv[1] == "--json":
+    print(json.dumps(WORD_RESPONSE, ensure_ascii=False))
+elif sys.argv[1] == "-t":
+    print(PARAGRAPH_QUERY)
+    print(PARAGRAPH_TRANSLATION)
