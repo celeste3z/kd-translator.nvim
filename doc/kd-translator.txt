@@ -14,6 +14,7 @@ MIT License Copyright (c) 2026 kd-translator.nvim
 - Operator-pending mode for quick translation
 - Customizable formatting via hooks
 - Dot-repeat support via |vim-repeat| (optional)
+- Dictionary complete integration
 
 # Setup ~
 
@@ -76,6 +77,10 @@ Usage:
   " Translate visual selection:
   :'<,'>KdTranslator
 <
+
+# Dictionary complete integration ~
+
+See |KdTranslator-blink-cmp-dictionary| for a usage example with `blink-cmp-dictionary`.
 
 # Highlight groups ~
                                    *KdTranslator-highlight-groups*
@@ -280,6 +285,35 @@ Return ~
 Return ~
 `(KdTranslator.HLRange[])` ranges
 
+                                       *KdTranslator-blink-cmp-dictionary*
+Usage example with `blink-cmp-dictionary` for `blink.cmp`:
+
+>lua
+  dictionary = {
+    module = "blink-cmp-dictionary",
+    name = "Dict",
+    min_keyword_length = 3,
+    opts = {
+      dictionary_files = { "path/to/your/dictionary.txt" },
+      get_documentation = function(item)
+        return {
+          get_command = function() return "kd" end,
+          get_command_args = function() return { "--json", item } end,
+          resolve_documentation = function(output)
+            local kd = require("kd-translator")
+            local lines, ranges = kd.format_raw_word_output(output)
+            if #lines == 0 then return nil end
+            return {
+              draw = function(opts)
+                kd.render(opts.window:get_buf(), lines, ranges)
+              end,
+            }
+          end,
+        }
+      end,
+    },
+  },
+<
 ------------------------------------------------------------------------------
                                                  *M.translate_word_and_format()*
                `M.translate_word_and_format`({text}, {callback})
@@ -296,12 +330,15 @@ Return ~
 `(integer)` Highlight namespace ID. Useful for external highlight management.
 
 ------------------------------------------------------------------------------
-                                                          *M.apply_highlights()*
-                     `M.apply_highlights`({buf}, {ranges})
-Apply highlight ranges to a buffer
+                                                                    *M.render()*
+                      `M.render`({buf}, {lines}, {ranges})
+Render formatted translation output in a buffer.
+
+Clears the namespace, sets lines, and applies highlight ranges.
 
 Parameters ~
 {buf} `(integer)`
+{lines} `(string[])`
 {ranges} `(KdTranslator.HLRange[])`
 
 ------------------------------------------------------------------------------

@@ -14,6 +14,7 @@
 --- - Operator-pending mode for quick translation
 --- - Customizable formatting via hooks
 --- - Dot-repeat support via |vim-repeat| (optional)
+--- - Dictionary complete integration
 ---
 --- # Setup ~
 ---
@@ -76,6 +77,10 @@
 ---   " Translate visual selection:
 ---   :'<,'>KdTranslator
 --- <
+---
+--- # Dictionary complete integration ~
+---
+--- See |KdTranslator-blink-cmp-dictionary| for a usage example with `blink-cmp-dictionary`.
 ---
 --- # Highlight groups ~
 ---                                    *KdTranslator-highlight-groups*
@@ -631,6 +636,36 @@ end
 ---@param raw_output string Raw stdout from `kd --json`
 ---@return string[] lines
 ---@return KdTranslator.HLRange[] ranges
+---
+---                                        *KdTranslator-blink-cmp-dictionary*
+--- Usage example with `blink-cmp-dictionary` for `blink.cmp`:
+---
+--- >lua
+---   dictionary = {
+---     module = "blink-cmp-dictionary",
+---     name = "Dict",
+---     min_keyword_length = 3,
+---     opts = {
+---       dictionary_files = { "path/to/your/dictionary.txt" },
+---       get_documentation = function(item)
+---         return {
+---           get_command = function() return "kd" end,
+---           get_command_args = function() return { "--json", item } end,
+---           resolve_documentation = function(output)
+---             local kd = require("kd-translator")
+---             local lines, ranges = kd.format_raw_word_output(output)
+---             if #lines == 0 then return nil end
+---             return {
+---               draw = function(opts)
+---                 kd.render(opts.window:get_buf(), lines, ranges)
+---               end,
+---             }
+---           end,
+---         }
+---       end,
+---     },
+---   },
+--- <
 function M.format_raw_word_output(raw_output)
   local filtered = H.filter_stdout(raw_output)
   if #filtered == 0 then return {}, {} end
@@ -672,11 +707,16 @@ end
 ---@return integer Highlight namespace ID. Useful for external highlight management.
 function M.get_ns() return H.ns end
 
---- Apply highlight ranges to a buffer
+--- Render formatted translation output in a buffer.
+---
+--- Clears the namespace, sets lines, and applies highlight ranges.
 ---
 ---@param buf integer
+---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
-function M.apply_highlights(buf, ranges)
+function M.render(buf, lines, ranges)
+  vim.api.nvim_buf_clear_namespace(buf, H.ns, 0, -1)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   for _, r in ipairs(ranges) do
     vim.hl.range(buf, H.ns, r.group, { r.row, r.col_s }, { r.row, r.col_e })
   end

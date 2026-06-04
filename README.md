@@ -11,6 +11,7 @@ Translate words and paragraphs via `kd --json` / `kd -t` with rich formatting in
 - Operator-pending mode (e.g. `gtiw`, `gtip`)
 - Dot-repeat support via [vim-repeat](https://github.com/tpope/vim-repeat)
 - Fully customizable formatting via hooks
+- Dictionary complete integration
 
 ## Requirements
 
@@ -109,6 +110,44 @@ Examples:
 " Translate visual selection:
 :'<,'>KdTranslate
 ```
+
+## Dictionary complete integration
+
+Use `format_raw_word_output()` to convert raw `kd --json` output into formatted
+lines and highlight ranges, then `render()` to apply them to a buffer.
+
+Example with [`blink-cmp-dictionary`](https://github.com/Kaiser-Yang/blink-cmp-dictionary) for [`blink.cmp`](https://github.com/Saghen/blink.cmp) (inside `blink.cmp` `opts.sources.providers`):
+
+```lua
+dictionary = {
+  module = "blink-cmp-dictionary",
+  name = "Dict",
+  min_keyword_length = 3,
+  opts = {
+    dictionary_files = { "path/to/your/dictionary.txt" },
+    get_documentation = function(item)
+      return {
+        get_command = function() return "kd" end,
+        get_command_args = function() return { "--json", item } end,
+        resolve_documentation = function(output)
+          local kd = require("kd-translator")
+          local lines, ranges = kd.format_raw_word_output(output)
+          if #lines == 0 then return nil end
+          return {
+          draw = function(opts)
+            kd.render(opts.window:get_buf(), lines, ranges)
+          end,
+          }
+        end,
+      }
+    end,
+  },
+},
+```
+
+[`blink-cmp-dictionary`](https://github.com/Kaiser-Yang/blink-cmp-dictionary) provides dictionary word completions for [`blink.cmp`](https://github.com/Saghen/blink.cmp).
+When a completion item is selected, `kd --json <word>` runs automatically and
+the result renders with kd-translator's formatting in the documentation popup.
 
 ## Acknowledgments
 
