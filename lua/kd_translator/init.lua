@@ -1,3 +1,96 @@
+--- *kd-translator.txt* KdTranslator - plugin for kd CLI dictionary
+---
+--- MIT License Copyright (c) 2026 kd-translator.nvim
+---
+--- # Dependencies ~
+---
+--- - https://github.com/Karmenzind/kd
+--- - Optional: |vim-repeat| (https://github.com/tpope/vim-repeat) for dot-repeat support
+---
+--- # Features ~
+--- - Translate words via `kd --json` with rich formatting (phonetic, definitions, level, examples)
+--- - Translate paragraphs via `kd -t`
+--- - Floating preview window
+--- - Operator-pending mode for quick translation
+--- - Customizable formatting via hooks
+--- - Dot-repeat support via |vim-repeat| (optional)
+---
+--- # Setup ~
+---
+--- This module needs a setup with `require('kd_translator').setup({})`.
+--- See |KdTranslator.config| for structure and default values.
+---
+--- # Keymaps example ~
+---                                       *KdTranslator-keymaps-example*
+---
+--- The plugin provides two `<Plug>` mappings as building blocks:
+---
+--- - `<Plug>(kd-translator-operator)` `n` - Operator-pending mode for motions
+--- - `<Plug>(kd-translator-visual)` `x` - Translate visual selection
+---
+--- Basic keymaps:
+---
+--- >lua
+---   -- gt + motion: translate text object (iw, ip, iW, etc.)
+---   vim.keymap.set('n', 'gt', '<Plug>(kd-translator-operator)')
+---   -- gt in visual mode: translate selection
+---   vim.keymap.set('x', 'gt', '<Plug>(kd-translator-visual)')
+--- <
+---
+--- Press `gt` then a motion (like `iw`) to translate that text object.
+--- Press the same keybinding again (e.g. `gtiw` or `<Leader>tw`) to return focus to the preview window.
+---
+--- For quicker access, bind the operator + motion together:
+---
+--- >lua
+---   -- Quick translate word under cursor:
+---   vim.keymap.set('n', '<Leader>tw', '<Plug>(kd-translator-operator)iw')
+---   -- Quick translate paragraph:
+---   vim.keymap.set('n', '<Leader>tp', '<Plug>(kd-translator-operator)ip')
+---   -- Translate visual selection:
+---   vim.keymap.set('x', '<Leader>t', '<Plug>(kd-translator-visual)')
+--- <
+---
+--- # Notes ~
+---
+--- If |vim-repeat| is installed, pressing `.` after translation re-enters the
+--- preview window. It also enables dot-repeat: translate "hello" with `gtiw`,
+--- then move to "world" and press `.` to quickly translate it without repeating
+--- the full keybinding.
+---
+--- # Command ~
+---
+--- `:KdTranslator` {range}
+---
+--- If given a range (visual selection), translates the selected text.
+--- Otherwise translates the word under cursor (`<cword>`).
+---
+--- Created automatically by |M.setup()|.
+---
+--- Usage:
+---
+--- >lua
+---   " Translate word under cursor:
+---   :KdTranslator
+---
+---   " Translate visual selection:
+---   :'<,'>KdTranslator
+--- <
+---
+--- # Highlight groups ~
+---                                    *KdTranslator-highlight-groups*
+---
+--- - `KdTranslatorWord`           - word text            -> `Title`
+--- - `KdTranslatorPhonetic`       - phonetic notation    -> `@comment`
+--- - `KdTranslatorPos`            - part of speech label -> `Type`
+--- - `KdTranslatorLevel`          - level stars and rank -> `Keyword`
+--- - `KdTranslatorExampleNum`     - example number       -> `Constant`
+--- - `KdTranslatorExampleLabel`   - collocation label    -> `DiagnosticHint`
+--- - `KdTranslatorExampleEn`      - example English      -> `@comment`
+--- - `KdTranslatorExampleCn`      - example Chinese      -> `@comment`
+--- - `KdTranslatorTextQuery`      - paragraph query text -> `Identifier`
+--- - `KdTranslatorTextResult`     - paragraph result     -> `String`
+
 ---@alias KdTranslator.WordJsonFormatter fun(data: KdTranslator.WordJsonData, lines: string[], ranges: KdTranslator.HLRange[], row: integer): integer
 
 ---@alias KdTranslator.ExampleLineFormatter fun(data: KdTranslator.ExampleLineData, lines: string[], ranges: KdTranslator.HLRange[], row: integer): integer
@@ -5,6 +98,7 @@
 ---@alias KdTranslator.OperatorMode "char"|"line"|"block"|"visual"
 
 ---@class KdTranslator.Hooks
+--- Table of optional hook functions to customize formatting behavior
 ---@field pre_process? fun(text: string): string
 ---@field build_cmd? fun(text: string): string[]
 ---@field format_word_phonetic? KdTranslator.WordJsonFormatter
@@ -14,12 +108,50 @@
 ---@field format_co_li? KdTranslator.WordJsonFormatter
 ---@field format_au_bi_or? KdTranslator.WordJsonFormatter
 ---@field format_examples? KdTranslator.WordJsonFormatter
+---@text
+---
+--- # Hooks ~
+---
+--- All hook fields are optional. By default each delegates to the internal formatter
+--- (see |M.format_word_json()|).
+---
+--- Example of custom `pre_process` (called before text is sent to kd):
+---
+--- >lua
+---   require('kd_translator').setup({
+---     hook = {
+---       pre_process = function(text)
+---         -- Strip markdown link syntax: [text](url) -> text
+---         return text:gsub('%[([^%[%]]+)%]%(%S+%)', '%1')
+---       end,
+---     },
+---   })
+--- <
+---
+--- Example of custom `format_level` (called to render star/rank line):
+---
+--- >lua
+---   require('kd_translator').setup({
+---     hook = {
+---       format_level = function(data, lines, ranges, row)
+---         -- Only show stars, ignore rank and pattern
+---         if data.co and data.co.star then
+---           table.insert(lines, string.rep('★', data.co.star))
+---           row = row + 1
+---         end
+---         return row
+---       end,
+---     },
+---   })
+--- <
 
 ---@class KdTranslator.Opts
+--- Module configuration table
 ---@field cmd? string `kd` or command fullpath
 ---@field preview_opts? vim.lsp.util.open_floating_preview.Opts
 ---@field hook? KdTranslator.Hooks
 
+---@private
 ---@class KdTranslator
 local M = {}
 
@@ -29,9 +161,23 @@ H.did_setup = false
 H.ns = vim.api.nvim_create_namespace('KdTranslator')
 H.augroup = vim.api.nvim_create_augroup('KdTranslator', { clear = true })
 
----@type KdTranslator.Opts
+--- KdTranslator.config                                             *KdTranslator.config*
+---
+--- `KdTranslator.Opts` is a table with the following fields:
+---
+--- - {cmd} `(string)` Path to `kd` executable. Default: `'kd'`.
+--- - {preview_opts} `(vim.lsp.util.open_floating_preview.Opts)`
+--- - {hook} `(KdTranslator.Hooks|nil)` Customization hooks.
+---
+--- Defaults ~
+---@eval return MiniDoc.afterlines_to_code(MiniDoc.current.eval_section)
+
+--@type KdTranslator.Opts
 H.config = {
+  -- Path to `kd` executable
   cmd = 'kd',
+
+  -- Options for floating preview window
   preview_opts = {
     border = vim.o.winborder or 'rounded',
     title = ' Translator ',
@@ -39,23 +185,46 @@ H.config = {
     max_width = 80,
     max_height = 50,
   },
+
+  -- Customization hooks (all optional)
   hook = {
+    -- Transform text before passing to kd
+    -- Default: returns text unchanged
     pre_process = function(text) return text end,
+
+    -- Build command arguments. Return {"kd", flag, text}
+    -- Default: if text contains CJK or whitespace, uses "-t" (paragraph);
+    -- otherwise uses "--json" (word lookup)
     build_cmd = function(text)
       if text:find('[\xE4-\xE9][\x80-\xBF][\x80-\xBF]') or text:find('%s') then return { H.config.cmd, '-t', text } end
       return { H.config.cmd, '--json', text }
     end,
+
+    -- Format word + phonetic line (row 0)
     format_word_phonetic = function(...) return H.format_word_phonetic(...) end,
+
+    -- Format definitions: each line = "pos. definition"
     format_definitions = function(...) return H.format_definitions(...) end,
+
+    -- Format level line: stars + rank + pattern
     format_level = function(...) return H.format_level(...) end,
+
+    -- Format single example pair (en + cn)
     format_example_line = function(...) return H.format_example_line(...) end,
+
+    -- Format collocations with numbered items
     format_co_li = function(...) return H.format_co_li(...) end,
+
+    -- Format examples grouped by type (au, bi, or)
     format_au_bi_or = function(...) return H.format_au_bi_or(...) end,
+
+    -- Top-level examples orchestrator (calls co_li or au_bi_or)
     format_examples = function(...) return H.format_examples(...) end,
   },
 }
 
 ---@class KdTranslator.OperatorRegion
+--- Region marks and submode for operator text extraction
 ---@field mark_from string
 ---@field mark_to string
 ---@field submode string
@@ -66,6 +235,7 @@ H.submode_keys = {
   block = vim.api.nvim_replace_termcodes('<C-v>', true, true, true),
 }
 
+---@private
 ---@param mode string
 ---@return KdTranslator.OperatorRegion?
 function H.operator_region(mode)
@@ -87,6 +257,7 @@ function H.operator_region(mode)
   return { mark_from = mark_from, mark_to = mark_to, submode = submode }
 end
 
+---@private
 ---@param mark_from string
 ---@param mark_to string
 ---@param opts? {submode?: string, register?: string, silent?: boolean}
@@ -124,6 +295,7 @@ function H.region_text(mark_from, mark_to, opts)
   return #lines > 0 and table.concat(lines, '\n') or nil
 end
 
+---@private
 ---@param mode KdTranslator.OperatorMode
 ---@return string|nil
 function H.operator_text(mode)
@@ -132,6 +304,7 @@ function H.operator_text(mode)
   return H.region_text(region.mark_from, region.mark_to, { submode = region.submode })
 end
 
+---@private
 ---@param stdout string
 ---@return string[]
 function H.filter_stdout(stdout)
@@ -143,6 +316,7 @@ function H.filter_stdout(stdout)
     :totable()
 end
 
+---@private
 ---@param args string[]
 ---@param callback fun(err: string|nil, lines: string[])
 function H.run_kd(args, callback)
@@ -159,12 +333,14 @@ function H.run_kd(args, callback)
 end
 
 ---@class KdTranslator.HLRange
+--- Highlight range (row, column start/end, group name)
 ---@field group string
 ---@field row integer
 ---@field col_s integer
 ---@field col_e integer
 
 ---@class KdTranslator.WordJsonData
+--- Parsed JSON data from `kd --json` word lookup
 ---@field k string
 ---@field pron? table<string, string>
 ---@field para? string[]
@@ -172,10 +348,12 @@ end
 ---@field co? { star?: integer, rank?: string, pat?: string, li?: { a?: string, maj?: string, eg?: string[][] }[] }
 
 ---@class KdTranslator.ExampleLineData
+--- Single example line data (en, cn, optional source)
 ---@field en string
 ---@field cn? string
 ---@field source? string
 
+---@private
 ---@param data KdTranslator.WordJsonData
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
@@ -211,6 +389,7 @@ function H.format_word_phonetic(data, lines, ranges, row)
   return row + 1
 end
 
+---@private
 ---@param data KdTranslator.WordJsonData
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
@@ -233,6 +412,7 @@ function H.format_definitions(data, lines, ranges, row)
   return row
 end
 
+---@private
 ---@param data KdTranslator.WordJsonData
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
@@ -266,6 +446,7 @@ end
 
 local PREFIX = '   ≫   '
 
+---@private
 ---@param data KdTranslator.ExampleLineData
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
@@ -303,6 +484,7 @@ function H.format_example_line(data, lines, ranges, row)
   return row + 1
 end
 
+---@private
 ---@param data KdTranslator.WordJsonData
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
@@ -349,6 +531,7 @@ function H.format_co_li(data, lines, ranges, row)
   return row
 end
 
+---@private
 ---@param data KdTranslator.WordJsonData
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
@@ -376,6 +559,7 @@ function H.format_au_bi_or(data, lines, ranges, row)
   return row
 end
 
+---@private
 ---@param data KdTranslator.WordJsonData
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
@@ -402,8 +586,13 @@ function H.format_examples(data, lines, ranges, row)
   return row
 end
 
----@param data table parsed from `kd --json`
----@return string[], KdTranslator.HLRange[]
+--- Format word JSON data into display lines and highlight ranges
+---
+--- Calls hook formatters in sequence: word/phonetic, definitions, level, examples.
+---
+---@param data table Parsed JSON from `kd --json`
+---@return string[]
+---@return KdTranslator.HLRange[]
 function M.format_word_json(data)
   local function val(v) return v ~= vim.NIL and v or nil end
 
@@ -435,6 +624,7 @@ function M.format_word_json(data)
   return lines, ranges
 end
 
+---@private
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
 function H.show_float(lines, ranges)
@@ -445,7 +635,9 @@ function H.show_float(lines, ranges)
   end
 end
 
----@param text string
+--- Run `kd --json` and format the result via |M.format_word_json()|
+---
+---@param text string Word to look up
 ---@param callback fun(err: string|nil, lines?: string[], ranges?: KdTranslator.HLRange[])
 function M.translate_word_and_format(text, callback)
   H.run_kd({ H.config.cmd, '--json', text }, function(err, raw_lines)
@@ -470,9 +662,11 @@ function M.translate_word_and_format(text, callback)
   end)
 end
 
----@return integer
+---@return integer Highlight namespace ID. Useful for external highlight management.
 function M.get_ns() return H.ns end
 
+--- Apply highlight ranges to a buffer
+---
 ---@param buf integer
 ---@param ranges KdTranslator.HLRange[]
 function M.apply_highlights(buf, ranges)
@@ -481,7 +675,14 @@ function M.apply_highlights(buf, ranges)
   end
 end
 
----@param text string
+--- Translate text and show result in floating preview window
+---
+--- Uses `kd --json` for single words and `kd -t` for paragraphs or Chinese text.
+---
+---@param text string Text to translate
+---@usage >lua
+---   require('kd_translator').translate_preview('hello')
+--- <
 function M.translate_preview(text)
   local trimmed = text:match('^%s*(.-)%s*$') or text
   local cleaned = H.config.hook.pre_process(trimmed)
@@ -542,6 +743,11 @@ function M.translate_preview(text)
   end
 end
 
+--- Operator function for operator-pending mode
+---
+--- Called by `<Plug>(kd-translator-operator)`. Extracts text from the operator
+--- region and translates it via |M.translate_preview()|.
+---
 ---@param mode KdTranslator.OperatorMode
 function M.operator(mode)
   local text = H.operator_text(mode)
@@ -592,7 +798,16 @@ function H.create_keymaps()
   )
 end
 
+--- Module setup
+---
+--- Must be called before using the plugin. Creates highlight groups,
+--- autocmds, and |KdTranslator-keymaps-example|.
+---
 ---@param opts? KdTranslator.Opts
+---@usage >lua
+---   require('kd_translator').setup()
+---   require('kd_translator').setup({ cmd = '/path/to/kd' })
+--- <
 function M.setup(opts)
   if H.did_setup then return end
   H.did_setup = true
