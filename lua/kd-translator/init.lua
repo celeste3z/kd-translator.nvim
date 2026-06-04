@@ -1,11 +1,14 @@
---- *kd-translator.txt* KdTranslator - plugin for kd CLI dictionary
+--- *kd-translator* KdTranslator - plugin for kd CLI dictionary
 ---
---- MIT License Copyright (c) 2026 kd-translator.nvim
+--- MIT License Copyright (c) 2026 celeste3z
+---
+--- ------------------------------------------------------------------------------
+---                                                                   *KdTranslator*
 ---
 --- # Dependencies ~
 ---
 --- - https://github.com/Karmenzind/kd
---- - Optional: |vim-repeat| (https://github.com/tpope/vim-repeat) for dot-repeat support
+--- - Optional: `vim-repeat` (https://github.com/tpope/vim-repeat) for dot-repeat support
 ---
 --- # Features ~
 --- - Translate words via `kd --json` with rich formatting (phonetic, definitions, level, examples)
@@ -13,16 +16,16 @@
 --- - Floating preview window
 --- - Operator-pending mode for quick translation
 --- - Customizable formatting via hooks
---- - Dot-repeat support via |vim-repeat| (optional)
+--- - Dot-repeat support via `vim-repeat` (optional)
 --- - Dictionary complete integration
 ---
 --- # Setup ~
 ---
 --- This module needs a setup with `require('kd-translator').setup({})`.
---- See |KdTranslator.config| for structure and default values.
+--- See |kd-translator-config| for structure and default values.
 ---
 --- # Keymaps example ~
----                                       *KdTranslator-keymaps-example*
+---                                       *kd-translator-keymaps-example*
 ---
 --- The plugin provides two `<Plug>` mappings as building blocks:
 ---
@@ -54,7 +57,7 @@
 ---
 --- # Notes ~
 ---
---- If |vim-repeat| is installed, pressing `.` after translation re-enters the
+--- If `vim-repeat` is installed, pressing `.` after translation re-enters the
 --- preview window. It also enables dot-repeat: translate "hello" with `gtiw`,
 --- then move to "world" and press `.` to quickly translate it without repeating
 --- the full keybinding.
@@ -66,7 +69,7 @@
 --- If given a range (visual selection), translates the selected text.
 --- Otherwise translates the word under cursor (`<cword>`).
 ---
---- Created automatically by |M.setup()|.
+--- Created automatically by |KdTranslator.setup()|.
 ---
 --- Usage:
 ---
@@ -80,10 +83,10 @@
 ---
 --- # Dictionary complete integration ~
 ---
---- See |KdTranslator-blink-cmp-dictionary| for a usage example with `blink-cmp-dictionary`.
+--- See |kd-translator-blink-cmp-dictionary| for a usage example with `blink-cmp-dictionary`.
 ---
 --- # Highlight groups ~
----                                    *KdTranslator-highlight-groups*
+---                                    *kd-translator-highlight-groups*
 ---
 --- - `KdTranslatorWord`           - word text            -> `Title`
 --- - `KdTranslatorPhonetic`       - phonetic notation    -> `@comment`
@@ -118,7 +121,7 @@
 --- # Hooks ~
 ---
 --- All hook fields are optional. By default each delegates to the internal formatter
---- (see |M.format_word_json()|).
+--- (see |KdTranslator.format_word_json()|).
 ---
 --- Example of custom `pre_process` (called before text is sent to kd):
 ---
@@ -158,7 +161,7 @@
 
 ---@private
 ---@class KdTranslator
-local M = {}
+local KdTranslator = {}
 
 local H = {}
 
@@ -166,7 +169,7 @@ H.did_setup = false
 H.ns = vim.api.nvim_create_namespace('KdTranslator')
 H.augroup = vim.api.nvim_create_augroup('KdTranslator', { clear = true })
 
---- KdTranslator.config                                             *KdTranslator.config*
+--- KdTranslator.config                                             *kd-translator-config*
 ---
 --- `KdTranslator.Opts` is a table with the following fields:
 ---
@@ -598,7 +601,7 @@ end
 ---@param data table Parsed JSON from `kd --json`
 ---@return string[]
 ---@return KdTranslator.HLRange[]
-function M.format_word_json(data)
+function KdTranslator.format_word_json(data)
   local function val(v) return v ~= vim.NIL and v or nil end
 
   data.k = val(data.k)
@@ -637,7 +640,7 @@ end
 ---@return string[] lines
 ---@return KdTranslator.HLRange[] ranges
 ---
----                                        *KdTranslator-blink-cmp-dictionary*
+---                                        *kd-translator-blink-cmp-dictionary*
 --- Usage example with `blink-cmp-dictionary` for `blink.cmp`:
 ---
 --- >lua
@@ -666,12 +669,12 @@ end
 ---     },
 ---   },
 --- <
-function M.format_raw_word_output(raw_output)
+function KdTranslator.format_raw_word_output(raw_output)
   local filtered = H.filter_stdout(raw_output)
   if #filtered == 0 then return {}, {} end
   local ok, data = pcall(vim.json.decode, table.concat(filtered, '\n'))
   if not ok or not data or not data.k or #data.k == 0 then return {}, {} end
-  return M.format_word_json(data)
+  return KdTranslator.format_word_json(data)
 end
 
 ---@private
@@ -685,17 +688,17 @@ function H.show_float(lines, ranges)
   end
 end
 
---- Run `kd --json` and format the result via |M.format_word_json()|
+--- Run `kd --json` and format the result via |KdTranslator.format_word_json()|
 ---
 ---@param text string Word to look up
 ---@param callback fun(err: string|nil, lines?: string[], ranges?: KdTranslator.HLRange[])
-function M.translate_word_and_format(text, callback)
+function KdTranslator.translate_word_and_format(text, callback)
   H.run_kd({ H.config.cmd, '--json', text }, function(err, raw_lines)
     if err then
       callback(err, {}, {})
       return
     end
-    local lines, ranges = M.format_raw_word_output(table.concat(raw_lines or {}, '\n'))
+    local lines, ranges = KdTranslator.format_raw_word_output(table.concat(raw_lines or {}, '\n'))
     if #lines == 0 then
       callback('no result', {}, {})
       return
@@ -705,7 +708,7 @@ function M.translate_word_and_format(text, callback)
 end
 
 ---@return integer Highlight namespace ID. Useful for external highlight management.
-function M.get_ns() return H.ns end
+function KdTranslator.get_ns() return H.ns end
 
 --- Render formatted translation output in a buffer.
 ---
@@ -714,7 +717,7 @@ function M.get_ns() return H.ns end
 ---@param buf integer
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
-function M.render(buf, lines, ranges)
+function KdTranslator.render(buf, lines, ranges)
   vim.api.nvim_buf_clear_namespace(buf, H.ns, 0, -1)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   for _, r in ipairs(ranges) do
@@ -730,7 +733,7 @@ end
 ---@usage >lua
 ---   require('kd-translator').translate_preview('hello')
 --- <
-function M.translate_preview(text)
+function KdTranslator.translate_preview(text)
   local trimmed = text:match('^%s*(.-)%s*$') or text
   local cleaned = H.config.hook.pre_process(trimmed)
   if #cleaned == 0 then return end
@@ -785,7 +788,7 @@ function M.translate_preview(text)
         vim.notify('kd: no result', vim.log.levels.INFO, { title = 'KdTranslator' })
         return
       end
-      H.show_float(M.format_word_json(data))
+      H.show_float(KdTranslator.format_word_json(data))
     end)
   end
 end
@@ -793,12 +796,12 @@ end
 --- Operator function for operator-pending mode
 ---
 --- Called by `<Plug>(kd-translator-operator)`. Extracts text from the operator
---- region and translates it via |M.translate_preview()|.
+--- region and translates it via |KdTranslator.translate_preview()|.
 ---
 ---@param mode KdTranslator.OperatorMode
-function M.operator(mode)
+function KdTranslator.operator(mode)
   local text = H.operator_text(mode)
-  if text then M.translate_preview(text) end
+  if text then KdTranslator.translate_preview(text) end
 end
 
 function H.create_default_hl()
@@ -823,13 +826,13 @@ function H.create_autocmd()
 end
 
 function H.create_keymaps()
-  _G.__kd_translator_operator = M.operator
+  _G.__kd_translator_operator = KdTranslator.operator
 
   vim.api.nvim_create_user_command('KdTranslator', function(info)
     local text
     if info.range ~= 0 then text = H.region_text('<', '>', { submode = vim.fn.visualmode() }) end
     text = text or vim.fn.expand('<cword>')
-    if text and #text > 0 then M.translate_preview(text) end
+    if text and #text > 0 then KdTranslator.translate_preview(text) end
   end, { range = true, desc = 'Translate word or visual selection' })
 
   vim.keymap.set('n', '<Plug>(kd-translator-operator)', function()
@@ -840,7 +843,7 @@ function H.create_keymaps()
   vim.keymap.set(
     'x',
     '<Plug>(kd-translator-visual)',
-    function() M.operator('visual') end,
+    function() KdTranslator.operator('visual') end,
     { desc = 'Kd Translate selection' }
   )
 end
@@ -848,14 +851,14 @@ end
 --- Module setup
 ---
 --- Must be called before using the plugin. Creates highlight groups,
---- autocmds, and |KdTranslator-keymaps-example|.
+--- autocmds, and |kd-translator-keymaps-example|.
 ---
 ---@param opts? KdTranslator.Opts
 ---@usage >lua
 ---   require('kd-translator').setup()
 ---   require('kd-translator').setup({ cmd = '/path/to/kd' })
 --- <
-function M.setup(opts)
+function KdTranslator.setup(opts)
   if H.did_setup then return end
   H.did_setup = true
 
@@ -873,4 +876,4 @@ function M.setup(opts)
   H.create_keymaps()
 end
 
-return M
+return KdTranslator
