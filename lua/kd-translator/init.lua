@@ -624,6 +624,21 @@ function M.format_word_json(data)
   return lines, ranges
 end
 
+--- Process raw stdout from `kd --json` into formatted lines and ranges.
+---
+--- Pipeline: filter_stdout -> json.decode -> format_word_json
+---
+---@param raw_output string Raw stdout from `kd --json`
+---@return string[] lines
+---@return KdTranslator.HLRange[] ranges
+function M.format_raw_word_output(raw_output)
+  local filtered = H.filter_stdout(raw_output)
+  if #filtered == 0 then return {}, {} end
+  local ok, data = pcall(vim.json.decode, table.concat(filtered, '\n'))
+  if not ok or not data or not data.k or #data.k == 0 then return {}, {} end
+  return M.format_word_json(data)
+end
+
 ---@private
 ---@param lines string[]
 ---@param ranges KdTranslator.HLRange[]
@@ -645,20 +660,12 @@ function M.translate_word_and_format(text, callback)
       callback(err, {}, {})
       return
     end
-    if not raw_lines or #raw_lines == 0 then
-      callback('empty response', {}, {})
-      return
-    end
-    local ok, data = pcall(vim.json.decode, table.concat(raw_lines, '\n'))
-    if not ok or not data then
-      callback('invalid json response', {}, {})
-      return
-    end
-    if not data.k or #data.k == 0 then
+    local lines, ranges = M.format_raw_word_output(table.concat(raw_lines or {}, '\n'))
+    if #lines == 0 then
       callback('no result', {}, {})
       return
     end
-    callback(nil, M.format_word_json(data))
+    callback(nil, lines, ranges)
   end)
 end
 

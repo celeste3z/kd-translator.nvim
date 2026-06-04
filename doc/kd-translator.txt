@@ -267,6 +267,20 @@ Return ~
 `(KdTranslator.HLRange[])`
 
 ------------------------------------------------------------------------------
+                                                    *M.format_raw_word_output()*
+                    `M.format_raw_word_output`({raw_output})
+Process raw stdout from `kd --json` into formatted lines and ranges.
+
+Pipeline: filter_stdout -> json.decode -> format_word_json
+
+Parameters ~
+{raw_output} `(string)` Raw stdout from `kd --json`
+Return ~
+`(string[])` lines
+Return ~
+`(KdTranslator.HLRange[])` ranges
+
+------------------------------------------------------------------------------
                                                  *M.translate_word_and_format()*
                `M.translate_word_and_format`({text}, {callback})
 Run `kd --json` and format the result via |M.format_word_json()|
