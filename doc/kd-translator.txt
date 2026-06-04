@@ -114,6 +114,7 @@ Fields ~
 {format_au_bi_or} `(optional)` `(fun(data: KdTranslator.WordJsonData, lines: string[], ranges: KdTranslator.HLRange[], row: integer): integer)`
 {format_examples} `(optional)` `(fun(data: KdTranslator.WordJsonData, lines: string[], ranges: KdTranslator.HLRange[], row: integer): integer)`
 
+
 # Hooks ~
 
 All hook fields are optional. By default each delegates to the internal formatter

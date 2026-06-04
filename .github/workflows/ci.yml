@@ -24,6 +24,12 @@ jobs:
           neovim: true
           version: ${{ matrix.neovim_version }}
       - run: nvim --version
+      - name: Install mini.test & mini.doc
+        run: |
+          git clone --depth 1 https://github.com/nvim-mini/mini.test \
+            ~/.local/share/nvim/site/pack/core/opt/mini.test
+          git clone --depth 1 https://github.com/nvim-mini/mini.doc \
+            ~/.local/share/nvim/site/pack/core/opt/mini.doc
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
@@ -37,5 +43,11 @@ jobs:
         with:
           neovim: true
           version: v0.12.0
+      - name: Install mini.test & mini.doc
+        run: |
+          git clone --depth 1 https://github.com/nvim-mini/mini.test \
+            ~/.local/share/nvim/site/pack/core/opt/mini.test
+          git clone --depth 1 https://github.com/nvim-mini/mini.doc \
+            ~/.local/share/nvim/site/pack/core/opt/mini.doc
       - run: make --silent documentation
       - run: if [[ -n $(git status -s) ]]; then exit 1; fi

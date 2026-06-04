@@ -1,7 +1,9 @@
 vim.cmd([[let &rtp = getcwd() .. ',' .. &rtp]])
 
--- Load mini.test if available via packpath
+-- Load mini.test and mini.doc if available via packpath
 pcall(vim.cmd, 'packadd mini.nvim')
+pcall(vim.cmd, 'packadd mini.test')
+pcall(vim.cmd, 'packadd mini.doc')
 
 vim.o.columns = 80
 vim.o.lines = 24
