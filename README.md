@@ -51,7 +51,7 @@ vim.keymap.set('x', 'gt', '<Plug>(kd-translator-visual)', { desc = 'Kd Translate
 ## Configuration
 
 ```lua
-require('kd_translator').setup({
+require('kd-translator').setup({
   cmd = 'kd',
   preview_opts = {
     border = 'rounded',
@@ -95,7 +95,7 @@ If [vim-repeat](https://github.com/tpope/vim-repeat) is installed:
 ## Command
 
 ```
-:KdTranslate
+:KdTranslator
 ```
 
 Translates word under cursor or visual selection.
@@ -104,7 +104,7 @@ Examples:
 
 ```
 " Translate word under cursor:
-:KdTranslate
+:KdTranslator
 
 " Translate visual selection:
 :'<,'>KdTranslate

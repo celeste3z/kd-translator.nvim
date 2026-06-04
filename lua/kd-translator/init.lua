@@ -17,7 +17,7 @@
 ---
 --- # Setup ~
 ---
---- This module needs a setup with `require('kd_translator').setup({})`.
+--- This module needs a setup with `require('kd-translator').setup({})`.
 --- See |KdTranslator.config| for structure and default values.
 ---
 --- # Keymaps example ~
@@ -118,7 +118,7 @@
 --- Example of custom `pre_process` (called before text is sent to kd):
 ---
 --- >lua
----   require('kd_translator').setup({
+---   require('kd-translator').setup({
 ---     hook = {
 ---       pre_process = function(text)
 ---         -- Strip markdown link syntax: [text](url) -> text
@@ -131,7 +131,7 @@
 --- Example of custom `format_level` (called to render star/rank line):
 ---
 --- >lua
----   require('kd_translator').setup({
+---   require('kd-translator').setup({
 ---     hook = {
 ---       format_level = function(data, lines, ranges, row)
 ---         -- Only show stars, ignore rank and pattern
@@ -681,7 +681,7 @@ end
 ---
 ---@param text string Text to translate
 ---@usage >lua
----   require('kd_translator').translate_preview('hello')
+---   require('kd-translator').translate_preview('hello')
 --- <
 function M.translate_preview(text)
   local trimmed = text:match('^%s*(.-)%s*$') or text
@@ -805,8 +805,8 @@ end
 ---
 ---@param opts? KdTranslator.Opts
 ---@usage >lua
----   require('kd_translator').setup()
----   require('kd_translator').setup({ cmd = '/path/to/kd' })
+---   require('kd-translator').setup()
+---   require('kd-translator').setup({ cmd = '/path/to/kd' })
 --- <
 function M.setup(opts)
   if H.did_setup then return end

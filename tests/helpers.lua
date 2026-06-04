@@ -12,7 +12,7 @@ function Helpers.new_child_neovim()
 
   child.load_module = function(config)
     local cfg = vim.tbl_deep_extend('force', { cmd = './tests/mock-kd' }, config or {})
-    child.lua([[require('kd_translator').setup(...)]], { cfg })
+    child.lua([[require('kd-translator').setup(...)]], { cfg })
     child.lua([[
       vim.keymap.set('n', 'gt', '<Plug>(kd-translator-operator)', { desc = 'Test' })
       vim.keymap.set('x', 'gt', '<Plug>(kd-translator-visual)', { desc = 'Test' })

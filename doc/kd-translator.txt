@@ -17,7 +17,7 @@ MIT License Copyright (c) 2026 kd-translator.nvim
 
 # Setup ~
 
-This module needs a setup with `require('kd_translator').setup({})`.
+This module needs a setup with `require('kd-translator').setup({})`.
 See |KdTranslator.config| for structure and default values.
 
 # Keymaps example ~
@@ -114,7 +114,7 @@ All hook fields are optional. By default each delegates to the internal formatte
 Example of custom `pre_process` (called before text is sent to kd):
 
 >lua
-  require('kd_translator').setup({
+  require('kd-translator').setup({
     hook = {
       pre_process = function(text)
         -- Strip markdown link syntax: [text](url) -> text
@@ -127,7 +127,7 @@ Example of custom `pre_process` (called before text is sent to kd):
 Example of custom `format_level` (called to render star/rank line):
 
 >lua
-  require('kd_translator').setup({
+  require('kd-translator').setup({
     hook = {
       format_level = function(data, lines, ranges, row)
         -- Only show stars, ignore rank and pattern
@@ -301,7 +301,7 @@ Parameters ~
 {text} `(string)` Text to translate
 Usage ~
 >lua
-  require('kd_translator').translate_preview('hello')
+  require('kd-translator').translate_preview('hello')
 <
 ------------------------------------------------------------------------------
                                                                   *M.operator()*
@@ -326,8 +326,8 @@ Parameters ~
 {opts} `(optional)` `(KdTranslator.Opts)`
 Usage ~
 >lua
-  require('kd_translator').setup()
-  require('kd_translator').setup({ cmd = '/path/to/kd' })
+  require('kd-translator').setup()
+  require('kd-translator').setup({ cmd = '/path/to/kd' })
 <
 
  vim:tw=78:ts=8:noet:ft=help:norl:

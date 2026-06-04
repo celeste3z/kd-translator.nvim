@@ -33,7 +33,7 @@ T['format_word_json']['formats basic word data'] = function()
   }
   local lines = child.lua(
     [[
-    local kd = require('kd_translator')
+    local kd = require('kd-translator')
     local l, _ = kd.format_word_json(...)
     return l
   ]],
@@ -66,7 +66,7 @@ T['format_word_json']['handles minimal data'] = function()
   local data = { k = 'test', para = { 'n. 测试' } }
   local lines = child.lua(
     [[
-    local kd = require('kd_translator')
+    local kd = require('kd-translator')
     local l, _ = kd.format_word_json(...)
     return l
   ]],
@@ -82,7 +82,7 @@ T['format_word_json']['handles missing optional fields'] = function()
   local data = { k = 'minimal' }
   local lines = child.lua(
     [[
-    local kd = require('kd_translator')
+    local kd = require('kd-translator')
     local l, _ = kd.format_word_json(...)
     return l
   ]],
@@ -161,7 +161,7 @@ T['operator']['visual mode v gt']['translates visual selection'] = function()
   child.lua([[
     vim.cmd("normal! v5l")
     vim.cmd("normal! \027")
-    require('kd_translator').operator('visual')
+    require('kd-translator').operator('visual')
   ]])
   local content = child.get_float_content()
   eq(true, content ~= nil and #content > 0, 'floating window should appear')
@@ -189,7 +189,7 @@ T['operator']['visual mode V gt']['translates line selection'] = function()
   child.lua([[
     vim.api.nvim_buf_set_mark(0, '<', 1, 0, {})
     vim.api.nvim_buf_set_mark(0, '>', 3, 0, {})
-    require('kd_translator').operator('visual')
+    require('kd-translator').operator('visual')
   ]])
   local content = child.get_float_content()
   eq(true, content ~= nil and #content > 0, 'floating window should appear')
